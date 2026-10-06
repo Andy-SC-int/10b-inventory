@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>10B Inventory</title>
+<meta name="theme-color" content="#354A5F">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{
+  --shell:#354A5F; --bg:#F5F6F7; --card:#FFFFFF; --ink:#32363A; --muted:#6A6D70; --line:#E4E4E4;
+  --blue:#0A6ED1; --blue-dark:#0854A0; --blue-bg:#EBF5FE; --green:#107E3E; --green-bg:#F1FDF6;
+  --red:#BB0000; --red-bg:#FFEBEB; --amber:#E9730C;
+  font-family:-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  font-variant-numeric:tabular-nums;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-size:15px;line-height:1.45}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;padding:0 16px 56px}
+
+.shell{background:var(--shell);color:#fff}
+.shell .wrap{display:flex;align-items:center;gap:6px;padding-top:0;padding-bottom:0;min-height:52px;flex-wrap:wrap}
+.app-name{font-size:17px;font-weight:600;margin-right:14px;background:none;border:0;color:#fff;cursor:pointer;padding:12px 0}
+.tab{background:none;border:0;color:#D1DCE6;padding:15px 10px;cursor:pointer;border-bottom:3px solid transparent}
+.tab[aria-current="page"]{color:#fff;border-bottom-color:#fff}
+.me{margin-left:auto;font-size:13px;color:#D1DCE6}
+.me button{background:none;border:0;color:#fff;text-decoration:underline;cursor:pointer;padding:0 0 0 6px;font-size:13px}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:16px;margin-top:16px}
+.card h2{font-size:16px;font-weight:600;margin:0 0 12px}
+.searchbar{display:flex;gap:8px}
+.searchbar input{flex:1;min-width:0}
+.hint{font-size:13px;color:var(--muted);margin:6px 0 0}
+
+label{display:block;font-size:13px;color:var(--muted);margin-bottom:4px}
+input[type=text],input[type=search],textarea{width:100%;height:40px;padding:8px 10px;border:1px solid #89919A;border-radius:4px;background:#fff}
+textarea{height:auto;min-height:90px;resize:vertical}
+input:focus,textarea:focus{border-color:var(--blue);outline:none;box-shadow:0 0 0 1px var(--blue)}
+.field{margin-bottom:12px;min-width:0}
+.err{color:var(--red);font-size:13px;margin-top:4px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:0 16px}
+
+.btn{height:40px;padding:0 16px;border-radius:4px;border:1px solid var(--blue);background:#fff;color:var(--blue);cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{background:var(--blue-bg)}
+.btn.primary{background:var(--blue);color:#fff}
+.btn.primary:hover{background:var(--blue-dark)}
+.btn.big{height:52px;font-size:17px;flex:1}
+.btn:disabled{opacity:.55;cursor:default}
+.row-btns{display:flex;gap:10px;flex-wrap:wrap}
+.toggle{display:flex;gap:0}
+.toggle .btn{border-radius:0}
+.toggle .btn:first-child{border-radius:4px 0 0 4px}
+.toggle .btn:last-child{border-radius:0 4px 4px 0;border-left:0}
+.toggle .btn[aria-pressed="true"]{background:var(--blue);color:#fff}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:16px}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:8px;padding:14px 16px}
+.kpi span{font-size:13px;color:var(--muted)}
+.kpi b{display:block;font-size:30px;font-weight:300;color:var(--blue);line-height:1.2}
+
+.tbl-wrap{overflow-x:auto;margin:0 -16px -16px}
+table{width:100%;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-weight:600;color:var(--muted);font-size:13px;background:#FAFAFA;padding:10px 16px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:10px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+tr:last-child td{border-bottom:0}
+tr.click{cursor:pointer}
+tr.click:hover td{background:var(--blue-bg)}
+td.num,th.num{text-align:right}
+.link{color:var(--blue);cursor:pointer;background:none;border:0;padding:0;text-decoration:none}
+.link:hover{text-decoration:underline}
+.neg{color:var(--red)} .pos{color:var(--green)}
+.empty{color:var(--muted);padding:8px 0}
+
+.obj{display:flex;gap:16px;align-items:flex-start;flex-wrap:wrap}
+.obj .id-block{flex:1;min-width:220px}
+.obj .kind{font-size:13px;color:var(--muted)}
+.obj h1{font-size:28px;font-weight:600;margin:2px 0}
+.obj .sub{color:var(--muted)}
+.qtybox{text-align:right;min-width:150px}
+.qtybox b{display:block;font-size:56px;font-weight:300;line-height:1;color:var(--ink)}
+.qtybox b.zero{color:var(--red)}
+.qtybox span{font-size:13px;color:var(--muted)}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px 16px;margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+.facts dt{font-size:13px;color:var(--muted)}
+.facts dd{margin:2px 0 0;font-weight:500;overflow-wrap:anywhere}
+.live{font-size:12px;color:var(--muted);margin-top:10px}
+.bump{animation:bump .8s ease}
+@keyframes bump{0%{color:var(--blue);transform:scale(1.06)}100%{color:inherit;transform:none}}
+
+.banner{padding:10px 14px;border-radius:4px;margin-top:16px;font-size:14px}
+.banner.ok{background:var(--green-bg);color:var(--green);border:1px solid #B5E3C6}
+.banner.bad{background:var(--red-bg);color:var(--red);border:1px solid #F5C2C2}
+.loading{padding:40px 0;color:var(--muted);text-align:center}
+.toast{position:fixed;left:50%;bottom:20px;transform:translateX(-50%);background:#32363A;color:#fff;padding:10px 16px;border-radius:4px;font-size:14px;opacity:0;pointer-events:none;transition:opacity .2s;max-width:90vw;z-index:9}
+.toast.on{opacity:1}
+
+.sheet{display:flex;flex-wrap:wrap;gap:10px;margin-top:16px}
+.label{background:#fff;border:1px dashed #B0B5BA;display:flex;align-items:center;gap:8px;overflow:hidden;color:#000;font-family:Arial,sans-serif}
+.label .q{flex:none;display:flex}
+.label .lt{min-width:0;line-height:1.2}
+.label .lt b{display:block}
+.label .lt span{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.thermal .label{width:2in;height:1in;padding:.06in}
+.thermal .lt b{font-size:11pt} .thermal .lt span{font-size:7pt}
+.avery .label{width:2.625in;height:1in;padding:.08in .1in}
+.avery .lt b{font-size:12pt} .avery .lt span{font-size:8pt}
+@media print{
+  body *{visibility:hidden}
+  #sheet,#sheet *{visibility:visible}
+  #sheet{position:absolute;left:0;top:0;margin:0;gap:0}
+  .label{border:0}
+  .thermal .label{break-after:page}
+  .avery{padding:.5in 0 0 .1875in;display:grid!important;grid-template-columns:repeat(3,2.625in);column-gap:.125in;row-gap:0!important}
+}
+@media (max-width:560px){.qtybox{text-align:left}.obj h1{font-size:24px}}
+@media (prefers-reduced-motion:reduce){.bump{animation:none}.toast{transition:none}}
+</style>
+<style id="pagestyle"></style>
+</head>
+<body>
+<header class="shell">
+  <div class="wrap">
+    <button class="app-name" data-go="home">10B Inventory</button>
+    <nav aria-label="Main" style="display:flex">
+      <button class="tab" data-go="home">Overview</button>
+      <button class="tab" data-go="new">New bag</button>
+      <button class="tab" data-go="labels">Labels</button>
+    </nav>
+    <div class="me" id="me"></div>
+  </div>
+</header>
+<div class="wrap">
+  <form class="card searchbar" id="searchForm" autocomplete="off" style="margin-top:16px">
+    <input type="search" id="q" placeholder="Type or scan a bag ID, color, SKU, lot or location" aria-label="Search">
+    <button class="btn primary" type="submit">Search</button>
+  </form>
+  <main id="view"><div class="loading">Loading…</div></main>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+/* ======================================================================
+   SETUP: paste your Apps Script Web app link (ends in /exec) between the
+   quotes on the next line, then upload this file. That's the only edit.
+   ====================================================================== */
+const API_URL = ''https://script.google.com/macros/s/AKfycbyvkaxpWxGHjkd3mKXvpL-xqNj_NBN5J-5hQNfO-c4HEivc6M2_ghPAHZYcbN_WFOc1/exec'';
+
+const PAGE_URL = location.origin + location.pathname;
+const RAW_ID = new URLSearchParams(location.search).get('id') || '';
+const INITIAL_ID = /^[A-Za-z0-9._-]{1,40}$/.test(RAW_ID) ? RAW_ID : '';
+const API_READY = /^https:\/\/script\.google(usercontent)?\.com\/.+\/exec/.test(API_URL);
+const S = { name: '', view: '', arg: null, bag: null, history: [], poll: null, busy: false, editing: false };
+const $ = s => document.querySelector(s);
+const view = $('#view');
+
+/* Talks to the Google Sheet in the background. No Google sign-in is involved:
+   requests carry no cookies, so it works the same on every phone. */
+const READS = { home: 1, bag: 1, search: 1, labels: 1, ping: 1 };
+async function call(action, params) {
+  params = params || {};
+  const ctrl = new AbortController(); const timer = setTimeout(() => ctrl.abort(), 30000);
+  let res;
+  try {
+    if (READS[action]) {
+      const qs = new URLSearchParams({ action });
+      Object.keys(params).forEach(k => qs.set(k, Array.isArray(params[k]) ? params[k].join(',') : params[k]));
+      res = await fetch(API_URL + '?' + qs.toString(), { credentials: 'omit', signal: ctrl.signal });
+    } else {
+      res = await fetch(API_URL, { method: 'POST', credentials: 'omit', signal: ctrl.signal,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ action }, params)) });
+    }
+  } catch (e) {
+    throw new Error(e.name === 'AbortError' ? 'The inventory sheet took too long to answer. Try again.' : 'Can\'t reach the inventory sheet. Check the internet connection and try again.');
+  } finally { clearTimeout(timer); }
+  let body;
+  try { body = await res.json(); } catch (e) { throw new Error('The inventory sheet sent an unexpected answer. Check that the web app is deployed with access set to Anyone.'); }
+  if (!body.ok) throw new Error(body.error || 'Something went wrong.');
+  return body.data;
+}
+function esc(v) { return String(v === null || v === undefined ? '' : v).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+function errText(e) { return String((e && e.message) || e || 'Something went wrong.').replace(/^Error:\s*/, ''); }
+function fmt(iso) { if (!iso) return ''; const d = new Date(iso); return isNaN(d) ? esc(iso) : d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }); }
+function ago(iso) {
+  if (!iso) return ''; const m = Math.round((Date.now() - new Date(iso)) / 60000);
+  if (m < 1) return 'just now'; if (m < 60) return m + ' min ago'; const h = Math.round(m / 60);
+  if (h < 24) return h + ' hr ago'; const d = Math.round(h / 24); return d + (d === 1 ? ' day ago' : ' days ago');
+}
+let tt; function toast(m) { const t = $('#toast'); t.textContent = m; t.className = 'toast on'; clearTimeout(tt); tt = setTimeout(() => t.className = 'toast', 3500); }
+function loadName() { try { return localStorage.getItem('inv_name') || ''; } catch (e) { return ''; } }
+function saveName(n) { try { localStorage.setItem('inv_name', n); } catch (e) {} }
+function val(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+function showErr(id, msg) { const el = document.getElementById(id); if (el) { el.textContent = msg; el.hidden = !msg; } }
+
+/* ---------- name ---------- */
+function renderMe() { $('#me').innerHTML = S.name ? `${esc(S.name)}<button id="chName">Change</button>` : ''; }
+function nameGate(then) {
+  stopPoll(); setTabs('');
+  view.innerHTML = `<form class="card" id="nameForm" novalidate style="max-width:440px">
+    <h2>Who's using the app?</h2>
+    <p class="hint" style="margin:-6px 0 14px">Your name signs every scan and change. It's saved on this device.</p>
+    <div class="field"><label for="nm">Your name</label><input type="text" id="nm" autocomplete="name" value="${esc(S.name)}"><div class="err" id="nmErr" hidden></div></div>
+    <button class="btn primary" type="submit">Continue</button></form>`;
+  $('#nm').focus();
+  $('#nameForm').onsubmit = e => {
+    e.preventDefault();
+    const n = val('nm').replace(/\s+/g, ' ');
+    if (n.length < 2) return showErr('nmErr', 'Type your name, at least 2 letters.');
+    S.name = n; saveName(n); renderMe(); then();
+  };
+}
+
+/* ---------- navigation ---------- */
+function setTabs(v) { document.querySelectorAll('.tab').forEach(b => b.setAttribute('aria-current', b.dataset.go === v ? 'page' : 'false')); }
+function stopPoll() { clearInterval(S.poll); S.poll = null; }
+function startPoll(fn, ms) {
+  stopPoll();
+  S.poll = setInterval(() => {
+    if (document.visibilityState !== 'visible' || S.busy || S.editing) return;
+    const a = document.activeElement;
+    if (a && (a.tagName === 'INPUT' || a.tagName === 'TEXTAREA') && a.value) return;
+    fn();
+  }, ms);
+}
+function go(v, arg, opts) {
+  opts = opts || {};
+  stopPoll(); S.view = v; S.arg = arg; S.editing = false; setTabs(v);
+  if (!opts.noPush) { try { history.pushState({ v, arg: arg || '' }, '', v === 'bag' ? PAGE_URL + '?id=' + encodeURIComponent(arg) : PAGE_URL); } catch (e) {} }
+  window.scrollTo(0, 0);
+  if (v === 'home') return showHome();
+  if (v === 'bag') return showBag(arg, !!opts.scanned);
+  if (v === 'search') return showSearch(arg);
+  if (v === 'new') return showNew();
+  if (v === 'labels') return showLabels(arg);
+}
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { e.preventDefault(); go(g.dataset.go); return; }
+  const o = e.target.closest('[data-bag]'); if (o) { e.preventDefault(); go('bag', o.dataset.bag); return; }
+  const c = e.target.closest('[data-search]'); if (c) { e.preventDefault(); go('search', c.dataset.search); return; }
+  if (e.target.id === 'chName') { const v = S.view, a = S.arg; nameGate(() => go(v || 'home', a, { noPush: true })); }
+});
+$('#searchForm').onsubmit = e => {
+  e.preventDefault();
+  let q = val('q'); const m = q.match(/[?&]id=([^&]+)/); if (m) q = decodeURIComponent(m[1]);
+  if (!q) return;
+  $('#q').value = '';
+  if (/^B-\d+$/i.test(q)) go('bag', q.toUpperCase()); else go('search', q);
+};
+
+/* ---------- overview ---------- */
+async function showHome(silent) {
+  if (!silent) view.innerHTML = '<div class="loading">Loading inventory…</div>';
+  try {
+    const h = await call('home'); if (S.view !== 'home') return;
+    const s = h.stats;
+    view.innerHTML = `
+      <div class="kpis">
+        <div class="kpi"><span>Applicators on hand</span><b>${s.total}</b></div>
+        <div class="kpi"><span>Bags in use</span><b>${s.open}</b></div>
+        <div class="kpi"><span>Colors in stock</span><b>${s.colors}</b></div>
+        <div class="kpi"><span>Taken today</span><b>${s.takenToday}</b></div>
+      </div>
+      <section class="card"><h2>Inventory by color</h2>
+        ${h.inventory.length ? `<div class="tbl-wrap"><table><thead><tr><th>Color</th><th>Category</th><th class="num">On hand</th><th class="num">Bags</th><th>Locations</th></tr></thead><tbody>
+          ${h.inventory.map(c => `<tr class="click" data-search="${esc(c.color)}"><td><span class="link">${esc(c.color)}</span></td><td>${esc(c.category)}</td><td class="num${c.qty === 0 ? ' neg' : ''}">${c.qty === 0 ? 'Out of stock' : c.qty}</td><td class="num">${c.bags}</td><td>${esc(c.locations)}</td></tr>`).join('')}
+          </tbody></table></div>` : '<p class="empty">No bags yet. Use New bag to add the first one.</p>'}
+      </section>
+      <section class="card"><h2>Recent activity</h2>${logTable(h.recent, true)}</section>
+`;
+    if (!S.poll) startPoll(() => showHome(true), 30000);
+  } catch (e) { if (!silent) view.innerHTML = `<div class="banner bad">${esc(errText(e))}</div>`; }
+}
+
+function logTable(rows, showBag) {
+  if (!rows.length) return '<p class="empty">Nothing yet.</p>';
+  return `<div class="tbl-wrap"><table><thead><tr><th>When</th>${showBag ? '<th>Bag</th><th>Color</th>' : ''}<th>Action</th><th class="num">Change</th><th class="num">Qty after</th><th>Person</th><th>Note</th></tr></thead><tbody>
+    ${rows.map(l => {
+      const ch = l.change === '' || l.change === null || l.change === undefined ? '' : Number(l.change);
+      return `<tr><td>${esc(fmt(l.time))}</td>${showBag ? `<td><button class="link" data-bag="${esc(l.id)}">${esc(l.id)}</button></td><td>${esc(l.color)}</td>` : ''}
+      <td>${esc(l.action)}</td><td class="num ${ch < 0 ? 'neg' : ch > 0 ? 'pos' : ''}">${ch === '' ? '' : (ch > 0 ? '+' : '') + ch}</td>
+      <td class="num">${esc(l.after)}</td><td>${esc(l.person)}</td><td>${esc(l.note)}</td></tr>`; }).join('')}
+    </tbody></table></div>`;
+}
+
+/* ---------- search ---------- */
+async function showSearch(q) {
+  view.innerHTML = '<div class="loading">Searching…</div>';
+  try {
+    const r = await call('search', { q }); if (S.view !== 'search') return;
+    if (r.length === 1) return go('bag', r[0].id, { noPush: true });
+    const total = r.reduce((s, b) => s + b.qty, 0);
+    view.innerHTML = `<section class="card"><h2>${r.length} bag${r.length === 1 ? '' : 's'} matching “${esc(q)}”${r.length ? `, ${total} applicators` : ''}</h2>
+      ${r.length ? `<div class="tbl-wrap"><table><thead><tr><th>Bag</th><th>Color</th><th>Category</th><th>Lot</th><th class="num">Qty</th><th>Location</th><th>Next stop</th></tr></thead><tbody>
+        ${r.map(b => `<tr class="click" data-bag="${esc(b.id)}"><td><span class="link">${esc(b.id)}</span></td><td>${esc(b.color)}</td><td>${esc(b.category)}</td><td>${esc(b.lot)}</td><td class="num">${b.qty}</td><td>${esc(b.location)}</td><td>${esc(b.assignedTo)}</td></tr>`).join('')}
+        </tbody></table></div>` : '<p class="empty">Nothing matches. Check the spelling or the ID on the sticker.</p>'}
+      <div class="row-btns" style="margin-top:28px">${r.length ? `<button class="btn" id="printThese">Print labels for these</button>` : ''}</div></section>`;
+    if ($('#printThese')) $('#printThese').onclick = () => go('labels', { ids: r.map(b => b.id) });
+  } catch (e) { view.innerHTML = `<div class="banner bad">${esc(errText(e))}</div>`; }
+}
+
+/* ---------- bag ---------- */
+async function showBag(id, scanned) {
+  view.innerHTML = `<div class="loading">Opening ${esc(id)}…</div>`;
+  try {
+    const r = await call('bag', { id, scanned, name: S.name }); if (S.view !== 'bag') return;
+    if (r.notFound) { view.innerHTML = `<div class="banner bad">No bag has the ID ${esc(r.id)}. Search by color or lot instead.</div>`; return; }
+    S.bag = r.bag; S.history = r.history; S.prev = r.previous; S.synced = Date.now();
+    renderBag();
+    startPoll(pollBag, 15000);
+  } catch (e) { view.innerHTML = `<div class="banner bad">${esc(errText(e))}</div>`; }
+}
+async function pollBag() {
+  if (!S.bag || S.view !== 'bag') return;
+  try {
+    const r = await call('bag', { id: S.bag.id, scanned: false, name: S.name });
+    if (S.view !== 'bag' || !r.bag || S.busy || S.editing) return;
+    const before = S.bag.qty, changed = r.bag.qty !== before || r.history.length !== S.history.length || r.bag.location !== S.bag.location;
+    S.synced = Date.now();
+    if (changed) {
+      S.bag = r.bag; S.history = r.history; renderBag(before);
+      const h = r.history[0]; if (h) toast(`${h.person}: ${h.action.toLowerCase()}. ${r.bag.qty} in this bag now.`);
+    } else { const l = $('#live'); if (l) l.textContent = liveText(); }
+  } catch (e) {}
+}
+function liveText() { return 'Live. Last checked ' + new Date(S.synced).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' }) + '.'; }
+function fact(k, v) { return `<div><dt>${esc(k)}</dt><dd>${v === '' || v === undefined ? '—' : v}</dd></div>`; }
+
+function renderBag(oldQty) {
+  const b = S.bag, prev = S.prev;
+  const lastAt = prev ? prev.at : b.lastScanned, lastBy = prev ? prev.by : b.scannedBy;
+  view.innerHTML = `
+    <section class="card">
+      <div class="obj">
+        <div class="id-block"><div class="kind">Applicator bag</div><h1>${esc(b.id)}</h1>
+          <div style="font-size:18px">${esc(b.color)}</div>
+          <div class="sub">${[b.category, b.sku && 'SKU ' + b.sku, b.lot && 'Lot ' + b.lot].filter(Boolean).map(esc).join(' · ')}</div></div>
+        <div class="qtybox"><b id="qtyNum" class="${b.qty === 0 ? 'zero' : ''}">${b.qty}</b><span>applicators in this bag</span></div>
+      </div>
+      <dl class="facts" style="margin-bottom:0">
+        ${fact('Location', esc(b.location))}
+        ${fact('Next stop', esc(b.assignedTo))}
+        ${fact(prev ? 'Last scanned before you' : 'Last scanned', lastAt ? esc(fmt(lastAt)) + ' <span class="hint">(' + esc(ago(lastAt)) + ')</span>' : '')}
+        ${fact('Scanned by', esc(lastBy))}
+      </dl>
+      <div class="live" id="live">${liveText()}</div>
+    </section>
+
+    <form class="card" id="qtyForm" novalidate>
+      <h2>Take or return applicators</h2>
+      <div class="grid">
+        <div class="field"><label for="qn">How many</label><input type="text" id="qn" inputmode="numeric" autocomplete="off" placeholder="5"></div>
+        <div class="field"><label for="qnote">What for or where to (optional)</label><input type="text" id="qnote" autocomplete="off" placeholder="Salon service"></div>
+      </div>
+      <div class="row-btns"><button class="btn primary big" type="button" data-kind="take">Take</button><button class="btn big" type="button" data-kind="return">Return</button></div>
+      <div class="err" id="qErr" hidden></div>
+    </form>
+
+    <section class="card">
+      <h2>Move or assign</h2>
+      <div class="grid">
+        <form class="field" id="moveForm" novalidate><label for="loc">Move to location</label>
+          <div style="display:flex;gap:8px"><input type="text" id="loc" autocomplete="off" placeholder="Shelf 3"><button class="btn" type="submit">Move</button></div>
+          <div class="err" id="locErr" hidden></div></form>
+        <form class="field" id="assignForm" novalidate><label for="nxt">Next stop (leave empty to clear)</label>
+          <div style="display:flex;gap:8px"><input type="text" id="nxt" autocomplete="off" value="${esc(b.assignedTo)}" placeholder="Salon - Boston"><button class="btn" type="submit">Save</button></div>
+          <div class="err" id="nxtErr" hidden></div></form>
+      </div>
+    </section>
+
+    <section class="card" id="details"></section>
+
+    <section class="card"><h2>History</h2>${logTable(S.history, false)}</section>`;
+  renderDetails();
+  wireBag();
+  if (oldQty !== undefined && oldQty !== b.qty) { const n = $('#qtyNum'); n.classList.remove('bump'); void n.offsetWidth; n.classList.add('bump'); }
+}
+
+function renderDetails() {
+  const b = S.bag, box = $('#details');
+  if (!S.editing) {
+    box.innerHTML = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px"><h2 style="margin:0">Details</h2>
+      <div class="row-btns"><button class="btn" id="printOne">Print label</button><button class="btn" id="editBtn">Edit</button></div></div>
+      <dl class="facts" style="margin-top:0;padding-top:0;border-top:0">
+        ${fact('Color', esc(b.color))}${fact('Category', esc(b.category))}${fact('SKU', esc(b.sku))}${fact('Lot number', esc(b.lot))}
+        ${fact('Notes', esc(b.notes))}${fact('Created', b.created ? esc(fmt(b.created)) + ' by ' + esc(b.createdBy) : '')}
+      </dl>`;
+    $('#editBtn').onclick = () => { S.editing = true; renderDetails(); };
+    $('#printOne').onclick = () => go('labels', { ids: [b.id] });
+    return;
+  }
+  const f = (id, l, v, ph) => `<div class="field"><label for="${id}">${l}</label><input type="text" id="${id}" value="${esc(v)}" placeholder="${esc(ph || '')}" autocomplete="off"></div>`;
+  box.innerHTML = `<form id="editForm" novalidate><h2>Edit details</h2>
+    <div class="grid">${f('eColor', 'Color', b.color)}${f('eCat', 'Category', b.category, 'Color, Cuticle sauce, Empty, Testing')}
+    ${f('eSku', 'SKU', b.sku)}${f('eLot', 'Lot number', b.lot)}${f('eQty', 'Recount: applicators actually in the bag', b.qty)}</div>
+    <div class="field"><label for="eNotes">Notes</label><textarea id="eNotes">${esc(b.notes)}</textarea></div>
+    <div class="row-btns"><button class="btn primary" type="submit">Save</button><button class="btn" type="button" id="cancelEdit">Cancel</button></div>
+    <div class="err" id="eErr" hidden></div></form>`;
+  $('#eColor').focus();
+  $('#cancelEdit').onclick = () => { S.editing = false; renderDetails(); };
+  $('#editForm').onsubmit = async e => {
+    e.preventDefault();
+    if (!/^\d+$/.test(val('eQty'))) return showErr('eErr', 'Recount must be a whole number.');
+    await save(() => call('update', { id: b.id, fields: { Color: val('eColor'), Category: val('eCat'), SKU: val('eSku'), 'Lot number': val('eLot'), Qty: val('eQty'), Notes: val('eNotes') }, name: S.name }), 'eErr', () => { S.editing = false; });
+  };
+}
+
+async function save(call, errId, after) {
+  if (!S.name) { nameGate(() => go('bag', S.bag.id, { noPush: true })); return; }
+  S.busy = true; showErr(errId, '');
+  const btns = view.querySelectorAll('button'); btns.forEach(x => x.disabled = true);
+  try {
+    const old = S.bag.qty;
+    const r = await call();
+    if (after) after();
+    S.bag = r.bag; S.history = r.history; S.prev = null; S.synced = Date.now();
+    renderBag(old); toast(r.message);
+  } catch (e) { btns.forEach(x => x.disabled = false); showErr(errId, errText(e)); }
+  finally { S.busy = false; }
+}
+
+function wireBag() {
+  const b = S.bag;
+  const doQty = kind => {
+    const n = val('qn');
+    if (!/^\d+$/.test(n) || +n < 1) return showErr('qErr', 'Type how many applicators, like 5.');
+    if (kind === 'take' && +n > b.qty) return showErr('qErr', `Only ${b.qty} left in this bag.`);
+    save(() => call(kind === 'take' ? 'take' : 'give', { id: b.id, qty: n, note: val('qnote'), name: S.name }), 'qErr');
+  };
+  $('#qtyForm').onsubmit = e => { e.preventDefault(); showErr('qErr', 'Tap Take or Return.'); };
+  view.querySelectorAll('[data-kind]').forEach(btn => btn.onclick = () => doQty(btn.dataset.kind));
+  $('#qn').oninput = () => showErr('qErr', '');
+  $('#moveForm').onsubmit = e => {
+    e.preventDefault();
+    if (!val('loc')) return showErr('locErr', 'Type where the bag is going.');
+    save(() => call('move', { id: b.id, location: val('loc'), name: S.name }), 'locErr');
+  };
+  $('#assignForm').onsubmit = e => { e.preventDefault(); save(() => call('assign', { id: b.id, to: val('nxt'), name: S.name }), 'nxtErr'); };
+}
+
+/* ---------- new bag ---------- */
+function showNew() {
+  const f = (id, l, ph, extra) => `<div class="field"><label for="${id}">${l}</label><input type="text" id="${id}" placeholder="${esc(ph)}" autocomplete="off" ${extra || ''}><div class="err" id="${id}Err" hidden></div></div>`;
+  view.innerHTML = `<form class="card" id="newForm" novalidate>
+    <h2>New bag</h2>
+    <p class="hint" style="margin:-6px 0 14px">Each bag gets its own ID and QR sticker. Type “Empty” as the color for empty applicators.</p>
+    <div class="grid">${f('nColor', 'Color', 'Berry Bold')}${f('nCat', 'Category', 'Color, Cuticle sauce, Empty, Testing')}
+    ${f('nSku', 'SKU (optional)', '10B-C-101')}${f('nLot', 'Lot number (optional)', 'SA-0931')}
+    ${f('nQty', 'Applicators per bag', '48', 'inputmode="numeric"')}${f('nCount', 'How many bags like this', '1', 'inputmode="numeric" value="1"')}
+    ${f('nLoc', 'Stored at', 'Shelf 2')}${f('nNext', 'Next stop (optional)', 'Salon - Boston')}</div>
+    <div class="field"><label for="nNotes">Notes (optional)</label><input type="text" id="nNotes" autocomplete="off"></div>
+    <button class="btn primary" type="submit">Create</button><div class="err" id="newErr" hidden></div>
+  </form><div id="newResult"></div>`;
+  $('#nColor').focus();
+  $('#newForm').onsubmit = async e => {
+    e.preventDefault();
+    let ok = true;
+    const need = (id, test, msg) => { const good = test(val(id)); showErr(id + 'Err', good ? '' : msg); ok = ok && good; };
+    need('nColor', v => !!v, 'Type the color.');
+    need('nQty', v => /^\d+$/.test(v), 'Type a whole number, like 48.');
+    need('nCount', v => /^\d+$/.test(v) && +v >= 1 && +v <= 100, 'Type a number from 1 to 100.');
+    need('nLoc', v => !!v, 'Type where the bags are stored.');
+    if (!ok) return;
+    if (!S.name) return nameGate(() => go('new', null, { noPush: true }));
+    const btn = e.target.querySelector('[type=submit]'); btn.disabled = true; btn.textContent = 'Creating…';
+    try {
+      const r = await call('create', { fields: { Color: val('nColor'), Category: val('nCat'), SKU: val('nSku'), 'Lot number': val('nLot'), Qty: val('nQty'), Location: val('nLoc'), 'Assigned to': val('nNext'), Notes: val('nNotes') }, count: val('nCount'), name: S.name });
+      $('#newResult').innerHTML = `<div class="banner ok">Created ${r.ids.length} bag${r.ids.length === 1 ? '' : 's'}: ${r.ids.map(esc).join(', ')}</div>
+        <div class="row-btns" style="margin-top:10px"><button class="btn primary" id="printNew">Print their labels</button><button class="btn" data-bag="${esc(r.ids[0])}">Open ${esc(r.ids[0])}</button></div>`;
+      $('#printNew').onclick = () => go('labels', { ids: r.ids });
+      toast('Created ' + r.ids.length + ' bag' + (r.ids.length === 1 ? '' : 's') + '.');
+    } catch (x) { showErr('newErr', errText(x)); }
+    btn.disabled = false; btn.textContent = 'Create';
+  };
+}
+
+/* ---------- labels ---------- */
+function showLabels(arg) {
+  arg = arg || {};
+  S.stock = S.stock || 'thermal';
+  view.innerHTML = `<form class="card" id="lblForm" novalidate><h2>Print QR labels</h2>
+    <div class="grid">
+      <div class="field"><label for="lIds">Bag IDs, one per line</label><textarea id="lIds">${esc((arg.ids || []).join('\n'))}</textarea></div>
+      <div class="field"><label for="lColor">Or every bag of a color</label><input type="text" id="lColor" autocomplete="off" placeholder="Berry Bold">
+        <label style="margin-top:14px">Label stock</label>
+        <div class="toggle" role="group"><button type="button" class="btn" data-stock="thermal" aria-pressed="${S.stock === 'thermal'}">2 × 1 in roll</button><button type="button" class="btn" data-stock="avery" aria-pressed="${S.stock === 'avery'}">Avery 5160 sheet</button></div></div>
+    </div>
+    <div class="row-btns"><button class="btn primary" type="submit">Show labels</button><button class="btn" type="button" id="doPrint" disabled>Print</button></div>
+    <div class="err" id="lErr" hidden></div><p class="hint" id="lInfo"></p></form>
+    <div id="sheet" class="sheet ${S.stock}"></div>`;
+  view.querySelectorAll('[data-stock]').forEach(b => b.onclick = () => {
+    S.stock = b.dataset.stock;
+    view.querySelectorAll('[data-stock]').forEach(x => x.setAttribute('aria-pressed', x === b));
+    if ($('#sheet').children.length) buildLabels();
+  });
+  $('#lblForm').onsubmit = e => { e.preventDefault(); buildLabels(); };
+  $('#doPrint').onclick = () => window.print();
+  if (arg.ids && arg.ids.length) buildLabels();
+}
+async function buildLabels() {
+  const ids = val('lIds').split(/[\s,]+/).filter(Boolean), color = val('lColor');
+  showErr('lErr', '');
+  if (!ids.length && !color) return showErr('lErr', 'Type at least one bag ID or a color.');
+  if (typeof QRCode === 'undefined') return showErr('lErr', 'The QR code tool didn\'t load. Check the internet connection and reload.');
+  $('#lInfo').textContent = 'Building labels…';
+  try {
+    if (!/^https:/.test(PAGE_URL)) { $('#lInfo').textContent = ''; return showErr('lErr', 'Open the app from its web address (https://…) to print labels, so the stickers point to it.'); }
+    const r = await call('labels', { ids, color });
+    r.labels.forEach(l => { l.url = PAGE_URL + '?id=' + encodeURIComponent(l.id); });
+    r.link = PAGE_URL;
+    const sheet = $('#sheet'); sheet.className = 'sheet ' + S.stock;
+    $('#pagestyle').textContent = S.stock === 'thermal' ? '@page{size:2in 1in;margin:0}' : '@page{size:letter;margin:0}';
+    const px = S.stock === 'thermal' ? 80 : 84;
+    sheet.innerHTML = r.labels.map((l, i) => `<div class="label"><div class="q" id="qr${i}"></div><div class="lt"><b>${esc(l.id)}</b><span>${esc(l.color)}</span>${l.sku ? `<span>SKU ${esc(l.sku)}</span>` : ''}${l.lot ? `<span>Lot ${esc(l.lot)}</span>` : ''}</div></div>`).join('');
+    r.labels.forEach((l, i) => new QRCode(document.getElementById('qr' + i), { text: l.url, width: px, height: px, correctLevel: QRCode.CorrectLevel.M }));
+    $('#lInfo').innerHTML = `${r.labels.length} label${r.labels.length === 1 ? '' : 's'} ready.` + (r.missing.length ? ` Not found: ${esc(r.missing.join(', '))}.` : '') +
+      ` Print at 100% scale with no margins.<br>These stickers open: <b style="overflow-wrap:anywhere">${esc(r.link)}?id=…</b><br>Check it matches the Web app URL in Deploy > Manage deployments.`;
+    $('#doPrint').disabled = !r.labels.length;
+  } catch (e) { $('#lInfo').textContent = ''; showErr('lErr', errText(e)); }
+}
+
+/* ---------- start ---------- */
+(function init() {
+  if (!API_READY) {
+    view.innerHTML = '<div class="banner bad"><b>One setup step left.</b> Open this file, find the line that says 'https://script.google.com/macros/s/AKfycbyvkaxpWxGHjkd3mKXvpL-xqNj_NBN5J-5hQNfO-c4HEivc6M2_ghPAHZYcbN_WFOc1/exec' near the top of the script, and replace it with your Apps Script Web app link (it ends in /exec). See the setup guide.</div>';
+    return;
+  }
+  S.name = loadName(); renderMe();
+  window.addEventListener('popstate', e => { const s = e.state || {}; go(s.v || (new URLSearchParams(location.search).get('id') ? 'bag' : 'home'), s.arg || new URLSearchParams(location.search).get('id'), { noPush: true }); });
+  const start = () => INITIAL_ID ? go('bag', INITIAL_ID, { scanned: true, noPush: true }) : go('home', null, { noPush: true });
+  if (!S.name) nameGate(start); else start();
+})();
+</script>
+</body>
+</html>
